@@ -1,5 +1,6 @@
 package ro.raulstoica.reactive.repository;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -30,7 +31,7 @@ class PersonRepositoryImplTest {
         Person person = personMono.block();
 
         assertNotNull(person);
-        assertEquals(person.getId(), 1);
+        assertEquals(1, person.getId());
     }
 
     @Test
@@ -41,7 +42,7 @@ class PersonRepositoryImplTest {
 
         personMono.subscribe(person -> {
             assertNotNull(person);
-            assertEquals(person.getId(), 1);
+            assertEquals(1, person.getId());
         });
     }
 
@@ -65,11 +66,14 @@ class PersonRepositoryImplTest {
 
         personMono.map(person -> {
             System.out.println("Before map: " + person);
+            person.setId(8);
 
-            return person.getFirstName();
+            return person.getId();
         })
-                .subscribe(person ->
-                        System.out.println("After map: " + person));
+                .subscribe(id -> {
+                    assertNotNull(id);
+                    assertEquals(8, id);
+                });
     }
 
     @Test
@@ -80,7 +84,7 @@ class PersonRepositoryImplTest {
 
         Person person = personFlux.blockFirst();
 
-        System.out.println(person);
+        assertNotNull(person);
     }
 
     @Test
@@ -89,7 +93,7 @@ class PersonRepositoryImplTest {
 
         StepVerifier.create(personFlux).expectNextCount(4).verifyComplete();
 
-        personFlux.subscribe(System.out::println);
+        personFlux.subscribe(Assertions::assertNotNull);
     }
 
     @Test
@@ -100,7 +104,7 @@ class PersonRepositoryImplTest {
 
         Mono<List<Person>> personListMono = personFlux.collectList();
 
-        personListMono.subscribe(list -> list.forEach(System.out::println));
+        personListMono.subscribe(list -> list.forEach(Assertions::assertNotNull));
     }
 
     @Test
@@ -115,7 +119,10 @@ class PersonRepositoryImplTest {
 
         StepVerifier.create(personMono).expectNextCount(1).verifyComplete();
 
-        personMono.subscribe(System.out::println);
+        personMono.subscribe(person -> {
+            assertNotNull(person);
+            assertEquals(id, person.getId());
+        });
     }
 
     @Test
@@ -130,7 +137,12 @@ class PersonRepositoryImplTest {
 
         StepVerifier.create(personMono).expectNextCount(0).verifyComplete();
 
-        personMono.subscribe(System.out::println);
+        personMono.subscribe(person -> {
+            assertNotNull(person);
+            assertNull(person.getId());
+            assertNull(person.getFirstName());
+            assertNull(person.getLastName());
+        });
     }
 
     @Test
@@ -148,6 +160,11 @@ class PersonRepositoryImplTest {
         //you can beautifully decide what to write on error and what to return when the error is detected
         personMono.doOnError(throwable -> System.out.println("Goes bazooka!"))
                 .onErrorReturn(Person.builder().build())
-                .subscribe(System.out::println);
+                .subscribe(person -> {
+                    assertNotNull(person);
+                    assertNull(person.getId());
+                    assertNull(person.getFirstName());
+                    assertNull(person.getLastName());
+                });
     }
 }
